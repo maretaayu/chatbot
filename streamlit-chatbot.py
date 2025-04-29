@@ -1,80 +1,54 @@
-# import streamlit as st
-# from transformers import pipeline
-# from datetime import datetime
-
-# @st.cache_resource
-# def load_chatbot():
-#     return pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
-
-# chatbot = load_chatbot()
-
-# if "chat_history" not in st.session_state:
-#     st.session_state.chat_history = []
-
-# st.title("💬 AI Chatbot (Q&A Mode)")
-# st.markdown("Menggunakan model `distilbert-base-cased-distilled-squad` dari Hugging Face 🤗")
-
-# # Context chatbot (jawaban diambil dari sini)
-# context = st.text_area("🧠 Masukkan konteks/topik utama chatbot:", 
-#                        "Python adalah bahasa pemrograman yang populer untuk AI dan data science.")
-
-# # Input pengguna
-# user_input = st.text_input("Tanyakan sesuatu:")
-
-# if st.button("Kirim"):
-#     if user_input.strip():
-#         st.session_state.chat_history.append({"sender": "You", "message": user_input, "time": datetime.now().strftime("%H:%M")})
-#         result = chatbot(question=user_input, context=context)
-#         answer = result['answer']
-#         st.session_state.chat_history.append({"sender": "Bot", "message": answer, "time": datetime.now().strftime("%H:%M")})
-
-# st.markdown("### 🗨️ Riwayat Percakapan")
-# for chat in st.session_state.chat_history:
-#     with st.chat_message(chat["sender"].lower()):
-#         st.markdown(f"{chat['message']}  \n⌚ {chat['time']}")
-
-
 import streamlit as st
-from transformers import pipeline
+import requests
 
-# Setup pipeline with Hugging Face model (Flan-T5)
-@st.cache_resource
+# ========== CONFIG ==========
+OPENROUTER_API_KEY = "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"  # Ganti dengan OpenRouter API Key-mu
+MODEL = "mistralai/mistral-7b-instruct"  # Atau ganti sesuai model favoritmu
 
+HEADERS = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "HTTP-Referer": "http://localhost:8501",  # Ganti dengan domain kamu
+    "X-Title": "AI Chatbot Streamlit"
+}
 
-def load_bot():
-    return pipeline(
-        "text2text-generation",
-        model="google/flan-t5-small",  # atau flan-t5-base
-        tokenizer="google/flan-t5-small",
-        max_length=200,
-    )
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-bot = load_bot()
+# ========== STREAMLIT APP ==========
+st.title("🧠 AI Chatbot Bubble Style")
+st.markdown(f"Powered by `{MODEL}` via OpenRouter 🤖")
 
 # Chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-st.title("🧠 AI Chatbot Bubble Style")
-st.markdown("Powered by `flan-t5-xl` from Hugging Face 🤗")
-
-# Show chat bubbles
+# Tampilkan chat sebelumnya
 for chat in st.session_state.chat_history:
     with st.chat_message(chat["role"]):
         st.markdown(chat["content"])
 
-# Input box di bawah
+# Input dari pengguna
 user_input = st.chat_input("Tulis pesan di sini...")
 
 if user_input:
-    # Tampilkan input user
     st.chat_message("user").markdown(user_input)
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    # Dapatkan respons dari model
+    # Kirim ke OpenRouter API
     with st.spinner("Mengetik..."):
-        response = bot(f"Q: {user_input} A:")[0]['generated_text']
-    
-    # Tampilkan output
-    st.chat_message("assistant").markdown(response)
-    st.session_state.chat_history.append({"role": "assistant", "content": response})
+        payload = {
+            "model": MODEL,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_input}
+            ]
+        }
+
+        response = requests.post(API_URL, headers=HEADERS, json=payload)
+
+        if response.status_code == 200:
+            bot_reply = response.json()['choices'][0]['message']['content']
+        else:
+            bot_reply = "⚠️ Maaf, gagal mengambil respons dari OpenRouter."
+
+    st.chat_message("assistant").markdown(bot_reply)
+    st.session_state.chat_history.append({"role": "assistant", "content": bot_reply})
