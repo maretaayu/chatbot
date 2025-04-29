@@ -2,12 +2,12 @@ import streamlit as st
 import requests
 
 # ========== CONFIG ==========
-OPENROUTER_API_KEY = "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"  # Ganti dengan OpenRouter API Key-mu
+OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]  # Akan diambil dari Streamlit secrets
 MODEL = "mistralai/mistral-7b-instruct"  # Atau ganti sesuai model favoritmu
 
 HEADERS = {
     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "HTTP-Referer": "http://localhost:8501",  # Ganti dengan domain kamu
+    "HTTP-Referer": "https://test-deploy-chatbot.streamlit.app",  # Update ini setelah deploy
     "X-Title": "AI Chatbot Streamlit"
 }
 
